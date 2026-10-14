@@ -60,4 +60,5 @@ Do this once on each device or browser (phone, laptop). After that, the site rem
 - **Changing `Code.gs` later?** Use **Deploy → Manage deployments → ✏️ Edit → Version: New version → Deploy**. This keeps the same URL. A *New deployment* would give you a new URL.
 - **Forgot the key, or want to change it?** Edit `SECRET` in Apps Script, redeploy as above, then use **Connection settings** on the site.
 - **Add to your phone's home screen.** Open the site in Chrome, then choose **⋮ → Add to Home screen**. It will work like an app.
-- **Shortcuts:** `/` jumps to search, **Enter** opens the top result, **Esc** clears the search.
+- **Shortcuts:** `/` or `Ctrl+K` jumps to search, **Enter** opens the top result, **Esc** clears the search, **N** adds a new link.
+- **Views:** switch between grid and list with the buttons next to *Sort*, and pick light, dark or device theme with the sun/moon button. Site icons are loaded from Google's favicon service; if one can't load, a coloured letter is shown instead.
