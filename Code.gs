@@ -18,6 +18,13 @@ const TASK_HEADERS = ['id', 'title', 'notes', 'status', 'progress', 'priority', 
 const STATUSES = ['todo', 'doing', 'done'];
 const PRIORITIES = ['', 'low', 'med', 'high'];
 
+// 2) OPTIONAL — AI assistant. Don't paste your API key here (this file is public on GitHub).
+//    Add it in Apps Script → Project Settings (gear) → Script properties:
+//      DEEPSEEK_API_KEY = sk-...            (required for the assistant)
+//      DEEPSEEK_MODEL   = deepseek-flash    (optional; e.g. deepseek-v4-pro)
+const DEEPSEEK_URL = 'https://api.deepseek.com/chat/completions';
+const DEFAULT_MODEL = 'deepseek-flash';
+
 /* ---------------- HTTP entry points ---------------- */
 
 function doGet(e) {
@@ -39,6 +46,7 @@ function handle_(req) {
 
   const action = req.action || 'list';
   if (action === 'list') return ok_();
+  if (action === 'ai') return json_(aiChat_(req.messages));
 
   const lock = LockService.getScriptLock();
   lock.waitLock(10000);
@@ -51,6 +59,7 @@ function handle_(req) {
       case 'taskAdd':    addTask_(req.task || {}); break;
       case 'taskUpdate': updateTask_(req.id, req.patch || {}); break;
       case 'taskDelete': deleteTask_(req.id); break;
+      case 'taskBatch':  taskBatch_(req.ops || []); break;
       default: return json_({ ok: false, error: 'Unknown action: ' + action });
     }
   } finally {
@@ -116,6 +125,16 @@ function openLink_(id) {
 }
 
 /* ---------------- Tasks ---------------- */
+
+// Several changes in one request (used when applying the AI assistant's suggestions).
+function taskBatch_(ops) {
+  ops.slice(0, 50).forEach(o => {
+    if (!o) return;
+    if (o.op === 'add') addTask_(o.task || {});
+    else if (o.op === 'update') updateTask_(o.id, o.patch || {});
+    else if (o.op === 'delete') deleteTask_(o.id);
+  });
+}
 
 function addTask_(t) {
   const title = String(t.title || '').trim();
@@ -229,6 +248,53 @@ function parseSteps_(v) {
   } catch (e) {
     return [];
   }
+}
+
+/* ---------------- AI assistant (DeepSeek) ---------------- */
+
+// The website builds the prompt; this only forwards it so the API key never reaches the browser.
+function aiChat_(messages) {
+  const props = PropertiesService.getScriptProperties();
+  const key = props.getProperty('DEEPSEEK_API_KEY');
+  if (!key) {
+    return { ok: false, code: 'no_key', error: 'The AI assistant is not set up yet. In Apps Script, open Project Settings → Script properties and add DEEPSEEK_API_KEY.' };
+  }
+  const msgs = (Array.isArray(messages) ? messages : []).slice(-24).map(m => ({
+    role: m && (m.role === 'system' || m.role === 'assistant') ? m.role : 'user',
+    content: String((m && m.content) || '').slice(0, 60000)
+  })).filter(m => m.content);
+  if (!msgs.length) return { ok: false, error: 'Empty message.' };
+
+  const res = UrlFetchApp.fetch(DEEPSEEK_URL, {
+    method: 'post',
+    contentType: 'application/json',
+    headers: { Authorization: 'Bearer ' + key },
+    payload: JSON.stringify({
+      model: props.getProperty('DEEPSEEK_MODEL') || DEFAULT_MODEL,
+      messages: msgs,
+      temperature: 0.3,
+      max_tokens: 2000,
+      response_format: { type: 'json_object' }
+    }),
+    muteHttpExceptions: true
+  });
+  const status = res.getResponseCode();
+  let body = {};
+  try { body = JSON.parse(res.getContentText()); } catch (e) {}
+  if (status !== 200) {
+    const why = body.error && body.error.message ? body.error.message : res.getContentText().slice(0, 200);
+    const hint = status === 401 ? ' Check DEEPSEEK_API_KEY.' : status === 402 ? ' Your DeepSeek balance may be empty.' : '';
+    return { ok: false, error: 'DeepSeek error ' + status + ': ' + why + hint };
+  }
+  const choice = body.choices && body.choices[0];
+  return { ok: true, content: choice && choice.message ? String(choice.message.content || '') : '' };
+}
+
+// Run this once from the Apps Script editor (select testAi → Run) to approve access
+// and check that your DeepSeek key works. The result appears in the execution log.
+function testAi() {
+  const r = aiChat_([{ role: 'user', content: 'Reply with the JSON object {"reply":"Hello! The assistant is working."}' }]);
+  Logger.log(JSON.stringify(r));
 }
 
 /* ---------------- Helpers ---------------- */

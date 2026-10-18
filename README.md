@@ -73,6 +73,30 @@ Switch to **Tasks** in the sidebar.
 - **Board:** the board button next to *Sort* shows To do / In progress / Done columns. On a computer, drag cards between columns.
 - **In the sheet:** each task is one row in the `Tasks` tab. You can edit it there too. Status is `todo`, `doing` or `done`, and dates are `yyyy-mm-dd`.
 
+## AI assistant (optional, uses your DeepSeek API key)
+
+On the Tasks page, click **✨ Ask AI** (or press **A**). Type or tap the 🎤 and speak naturally:
+
+- *"Call the bank tomorrow, pay rent on the 1st and finish the report by Friday, it's urgent"* creates three tasks with dates, priority and steps.
+- *"Mark the electricity bill as done"*, *"Move the dentist to next Monday"* or *"Set slides to 60%"* updates existing tasks.
+- *"Break the report into steps"*, *"Plan my day"*, *"What's overdue?"* or *"Weekly review"* gets advice and suggested changes.
+- Paste meeting notes after **Notes → tasks** to turn them into a task list.
+
+The assistant **never changes anything by itself**. It shows each proposed change with a checkbox, and you click **Apply**. You can also type in the quick-add box and press the ✨ button there.
+
+**Setup (one time, about 3 minutes):**
+
+1. Make sure Apps Script has the latest `Code.gs` (see the note in Part 3).
+2. In Apps Script, click the **gear (Project Settings)**. Under **Script properties**, click **Add script property**:
+   - Property: `DEEPSEEK_API_KEY`, Value: your key (`sk-…`)
+   - Optional: `DEEPSEEK_MODEL`, Value: `deepseek-v4-pro` for the stronger model. The default is the faster, cheaper `deepseek-flash`.
+   
+   Click **Save script properties**. **Never put the key in `Code.gs` or `index.html`.** Both are public on GitHub, but script properties are not.
+3. Back in the editor, choose **testAi** in the function dropdown and click **Run**. Google asks for permission to "connect to an external service". Allow it. The log should say *"The assistant is working."*
+4. **Deploy → Manage deployments → ✏️ Edit → Version: New version → Deploy.**
+
+**Voice** works in Chrome, Edge and Safari. Pick the language (English India / हिन्दी / English US / UK) under the chat box. Speech is turned into text by your browser's speech service. Your open tasks (titles, dates, notes) are sent to DeepSeek with each message, so the assistant knows what you're talking about.
+
 ---
 
 ## Good to know
@@ -81,5 +105,5 @@ Switch to **Tasks** in the sidebar.
 - **Changing `Code.gs` later?** Use **Deploy → Manage deployments → ✏️ Edit → Version: New version → Deploy**. This keeps the same URL. A *New deployment* would give you a new URL.
 - **Forgot the key, or want to change it?** Edit `SECRET` in Apps Script, redeploy as above, then use **Connection settings** on the site.
 - **Add to your phone's home screen.** Open the site in Chrome, then choose **⋮ → Add to Home screen**. It will work like an app.
-- **Shortcuts:** `/` or `Ctrl+K` jumps to search, **Enter** opens the top result, **Esc** clears the search, **N** adds a new link (or jumps to the task box on the Tasks page).
+- **Shortcuts:** `/` or `Ctrl+K` jumps to search, **Enter** opens the top result, **Esc** clears the search, **N** adds a new link (or jumps to the task box on the Tasks page), **A** opens the AI assistant.
 - **Views:** switch between grid and list with the buttons next to *Sort*, and pick light, dark or device theme with the sun/moon button. Site icons are loaded from Google's favicon service; if one can't load, a coloured letter is shown instead.
